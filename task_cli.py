@@ -1,6 +1,14 @@
 import sys
 import json
 from datetime import datetime
+from enum import nonmember
+
+
+def parse_task_id(task_id):
+    try:
+        return int(task_id)
+    except ValueError:
+        return None
 
 def get_next_id(tasks):
     maior_id = 0
@@ -16,6 +24,8 @@ def load_tasks():
             return tasks
     except FileNotFoundError:
         return []
+    except json.JSONDecodeError:
+        print("Arquivo corrompido ou inválido")
 
 def save_tasks(tasks):
     with open("tasks.json", "w") as jf:
@@ -56,8 +66,11 @@ def list_tasks(status=None):
 
 def update_task(task_id, description):
     tasks = load_tasks()
+    tid = parse_task_id(task_id)
+    if tid is None:
+        return None
     for task in tasks:
-        if task["id"] == int(task_id):
+        if task["id"] == tid:
             task["description"] = description
             task["updatedAt"] = datetime.now().isoformat()
             save_tasks(tasks)
@@ -66,8 +79,11 @@ def update_task(task_id, description):
 
 def delete_task(task_id):
     tasks = load_tasks()
+    tid = parse_task_id(task_id)
+    if tid is None:
+        return None
     for task in tasks:
-        if task["id"] == int(task_id):
+        if task["id"] == tid:
             tasks.remove(task)
             save_tasks(tasks)
             return task
@@ -75,8 +91,13 @@ def delete_task(task_id):
 
 def update_status(task_id, status):
     tasks = load_tasks()
+    tid = parse_task_id(task_id)
+    if tid is None:
+        return None
+    if status not in ["todo", "in-progress", "done"]:
+        return None
     for task in tasks:
-        if task["id"] == int(task_id):
+        if task["id"] == tid:
             task["status"] = status
             task["updatedAt"] = datetime.now().isoformat()
             save_tasks(tasks)
