@@ -1,8 +1,8 @@
 import sys
 import json
 from datetime import datetime
-from enum import nonmember
 
+VALID_STATUSES = ["todo", "in-progress", "done"]
 
 def parse_task_id(task_id):
     try:
@@ -24,8 +24,7 @@ def load_tasks():
             return tasks
     except FileNotFoundError:
         return []
-    except json.JSONDecodeError:
-        print("Arquivo corrompido ou inválido")
+
 
 def save_tasks(tasks):
     with open("tasks.json", "w") as jf:
@@ -47,7 +46,7 @@ def add_task(description):
     return dic
 
 def list_tasks(status=None):
-    if status not in ["todo", "in-progress", "done"] and status is not None:
+    if status not in VALID_STATUSES and status is not None:
         print("Filtro informado invalido. Use: todo, in-progress ou done.")
     else:
         tasks = load_tasks()
@@ -66,11 +65,8 @@ def list_tasks(status=None):
 
 def update_task(task_id, description):
     tasks = load_tasks()
-    tid = parse_task_id(task_id)
-    if tid is None:
-        return None
     for task in tasks:
-        if task["id"] == tid:
+        if task["id"] == task_id:
             task["description"] = description
             task["updatedAt"] = datetime.now().isoformat()
             save_tasks(tasks)
@@ -79,11 +75,8 @@ def update_task(task_id, description):
 
 def delete_task(task_id):
     tasks = load_tasks()
-    tid = parse_task_id(task_id)
-    if tid is None:
-        return None
     for task in tasks:
-        if task["id"] == tid:
+        if task["id"] == task_id:
             tasks.remove(task)
             save_tasks(tasks)
             return task
@@ -91,13 +84,8 @@ def delete_task(task_id):
 
 def update_status(task_id, status):
     tasks = load_tasks()
-    tid = parse_task_id(task_id)
-    if tid is None:
-        return None
-    if status not in ["todo", "in-progress", "done"]:
-        return None
     for task in tasks:
-        if task["id"] == tid:
+        if task["id"] == task_id:
             task["status"] = status
             task["updatedAt"] = datetime.now().isoformat()
             save_tasks(tasks)
@@ -111,59 +99,79 @@ if len(sys.argv) < 2:
     print("Nenhum comando encontrado")
     sys.exit(1)
 else:
-    command = sys.argv[1]
-    if command == "add":
-        if len(sys.argv) < 3:
-            print("Nenhuma descrição informada")
+    try:
+        command = sys.argv[1]
+        if command == "add":
+            if len(sys.argv) < 3:
+                print("Nenhuma descrição informada")
+                sys.exit(1)
+            else:
+                task = add_task(sys.argv[2])
+                print("O id da tarefa criada foi {}".format(task["id"]))
+        elif command == "list":
+            if len(sys.argv) < 3:
+                list_tasks()
+            else:
+                list_tasks(sys.argv[2])
+        elif command == "update":
+            if len(sys.argv) < 3:
+                print("Nenhum id e descrição informado")
+                sys.exit(1)
+            elif len(sys.argv) < 4:
+                print("Nenhuma descrição informada")
+                sys.exit(1)
+            else:
+                tid = parse_task_id(sys.argv[2])
+                if tid is None:
+                    print("Id informado é invalido, favor digitar um número inteiro")
+                else:
+                    task = update_task(tid, sys.argv[3])
+                    if task is None:
+                        print("Nenhuma tarefa encontrada com o id informado")
+                    else:
+                        print(f"A tarefa: {task['description']} de id: {task['id']} foi atualizada com sucesso")
+        elif command == "delete":
+            if len(sys.argv) < 3:
+                print("Nenhum id informado")
+            else:
+                tid = parse_task_id(sys.argv[2])
+                if tid is None:
+                    print("Id informado é invalido, favor digitar um número inteiro")
+                else:
+                    task = delete_task(tid)
+                    if task is None:
+                        print("Nenhuma tarefa encontrada com o id informado")
+                    else:
+                        print(f"Tarefa de id: {task['id']} foi deletada com sucesso")
+        elif command == "mark-done":
+            if len(sys.argv) < 3:
+                print("Nenhum id informado")
+            else:
+                tid = parse_task_id(sys.argv[2])
+                if tid is None:
+                    print("Id informado é invalido, favor digitar um número inteiro")
+                else:
+                    task = update_status(tid,"done")
+                    if task is None:
+                        print("Nenhuma tarefa encontrada com o id informado")
+                    else:
+                        print(f"Tarefa de id: {task['id']} teve seu status alterado com sucesso")
+        elif command == "mark-in-progress":
+            if len(sys.argv) < 3:
+                print("Nenhum id informado")
+            else:
+                tid = parse_task_id(sys.argv[2])
+                if tid is None:
+                    print("Id informado é invalido, favor digitar um número inteiro")
+                else:
+                    task = update_status(tid,"in-progress")
+                    if task is None:
+                        print("Nenhuma tarefa encontrada com o id informado")
+                    else:
+                        print(f"Tarefa de id: {task['id']} teve seu status alterado com sucesso")
+        else:
+            print("comando não encontrado")
             sys.exit(1)
-        else:
-            task = add_task(sys.argv[2])
-            print("O id da tarefa criada foi {}".format(task["id"]))
-    elif command == "list":
-        if len(sys.argv) < 3:
-            list_tasks()
-        else:
-            list_tasks(sys.argv[2])
-    elif command == "update":
-        if len(sys.argv) < 3:
-            print("Nenhum id e descrição informado")
-            sys.exit(1)
-        elif len(sys.argv) < 4:
-            print("Nenhuma descrição informada")
-            sys.exit(1)
-        else:
-            task = update_task(sys.argv[2], sys.argv[3])
-            if task is None:
-                print("Nenhuma tarefa encontrada com o id informado")
-            else:
-                print(f"A tarefa: {task['description']} de id: {task['id']} foi atualizada com sucesso")
-    elif command == "delete":
-        if len(sys.argv) < 3:
-            print("Nenhum id informado")
-        else:
-            task = delete_task(sys.argv[2])
-            if task is None:
-                print("Nenhuma tarefa encontrada com o id informado")
-            else:
-                print(f"Tarefa de id: {task['id']} foi deletada com sucesso")
-    elif command == "mark-done":
-        if len(sys.argv) < 3:
-            print("Nenhum id informado")
-        else:
-            task = update_status(sys.argv[2],"done")
-            if task is None:
-                print("Nenhuma tarefa encontrada com o id informado")
-            else:
-                print(f"Tarefa de id: {task['id']} teve seu status alterado com sucesso")
-    elif command == "mark-in-progress":
-        if len(sys.argv) < 3:
-            print("Nenhum id informado")
-        else:
-            task = update_status(sys.argv[2],"in-progress")
-            if task is None:
-                print("Nenhuma tarefa encontrada com o id informado")
-            else:
-                print(f"Tarefa de id: {task['id']} teve seu status alterado com sucesso")
-    else:
-        print("comando não encontrado")
+    except json.JSONDecodeError:
+        print("Arquivo corrompido ou inválido")
         sys.exit(1)
