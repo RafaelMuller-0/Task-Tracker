@@ -21,6 +21,8 @@ def load_tasks():
     try:
         with open("tasks.json", "r") as jf:
             tasks = json.load(jf)
+            if not isinstance(tasks, list):
+                raise ValueError
             return tasks
     except FileNotFoundError:
         return []
@@ -174,4 +176,7 @@ else:
             sys.exit(1)
     except json.JSONDecodeError:
         print("Arquivo corrompido ou inválido")
+        sys.exit(1)
+    except ValueError:
+        print("Estrutura do arquivo inválida")
         sys.exit(1)
