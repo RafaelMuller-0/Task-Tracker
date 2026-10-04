@@ -25,6 +25,7 @@ def load_tasks():
                 return []
             tasks = json.loads(conteudo)
             required_keys = ["id", "description", "status", "createdAt", "updatedAt"]
+            ids = set()
             if not isinstance(tasks, list):
                 raise ValueError("O arquivo não contém Lista")
             for task in tasks:
@@ -33,6 +34,9 @@ def load_tasks():
                 for key in required_keys:
                     if key not in task:
                         raise ValueError(f"A tarefa não possui a chave: {key}")
+                if task["id"] in ids:
+                    raise ValueError(f"O id {task['id']}, já existe")
+                ids.add(task["id"])
                 if not isinstance(task["id"], int):
                     raise ValueError(f"O id {task['id']} não está no formato INT")
                 if not isinstance(task['description'], str):
@@ -53,6 +57,8 @@ def load_tasks():
                     datetime.fromisoformat(task["updatedAt"])
                 except ValueError:
                     raise ValueError(f"O updatedAt: {task['updatedAt']} não está no padrão iso")
+
+
             return tasks
     except FileNotFoundError:
         return []
